@@ -13,10 +13,10 @@ Get your machine ready **before the buildathon session** so the day is spent bui
 | Language | Python 3.11+ | Required by the bootcamp; what LangGraph runs on |
 | IDE | VS Code | Free, cross-platform, great Python + Git support |
 | Agent framework | LangGraph (+ LangChain) | Graph-based multi-agent flow with a real human-in-the-loop pause |
-| LLM | Google Gemini (free tier via Google AI Studio) | Most generous free API tier, no credit card needed |
+| LLM | Ollama running `llama3.2:3b` locally | Free, no API key, no rate limits or "high demand" outages |
 | Version control | Git + GitHub | Required deliverable — "push your work to GitHub and share" |
 
-If the team prefers OpenAI or Groq instead of Gemini, only the API-key step and one package name change — the rest is identical.
+If the team later switches to a hosted LLM (Gemini, OpenAI, Groq), only Step 5, one package name and the model line change — the rest is identical.
 
 ---
 
@@ -67,14 +67,14 @@ When active, your terminal prompt shows `(.venv)`. Activate it every time you op
 With the virtual environment active:
 
 ```bash
-pip install langgraph langchain langchain-google-genai python-dotenv pandas
+pip install langgraph langchain langchain-ollama python-dotenv pandas
 ```
 
 What each is for:
 - **langgraph** — the agent graph (nodes, edges, state, the HITL interrupt)
 - **langchain** — core building blocks LangGraph sits on
-- **langchain-google-genai** — connects LangChain to Gemini *(swap for `langchain-openai` or `langchain-groq` if you change LLM)*
-- **python-dotenv** — loads your API key from a file instead of hard-coding it
+- **langchain-ollama** — connects LangChain to your local Ollama model *(swap for `langchain-google-genai`, `langchain-openai` or `langchain-groq` if you change LLM)*
+- **python-dotenv** — loads settings and any API keys from a `.env` file instead of hard-coding them
 - **pandas** — for the sample transaction data and behavioural history lookup
 
 Save the list so teammates get the exact same setup:
@@ -87,17 +87,24 @@ Anyone cloning the repo can then run `pip install -r requirements.txt`.
 
 ---
 
-## Step 5 — Get an LLM API key (Gemini)
+## Step 5 — Install Ollama and download the model
 
-1. Go to [aistudio.google.com](https://aistudio.google.com/) and sign in with a Google account.
-2. Click **Get API key** → create one. No credit card required.
-3. In your project folder, create a file named `.env`:
+Ollama runs the LLM on your own laptop, so there's no API key to manage.
 
+1. Install Ollama from [ollama.com/download](https://ollama.com/download) (Windows: run the installer, or `winget install Ollama.Ollama`).
+2. Open a **new** terminal and download the model (about 2 GB, one time only):
+
+   ```bash
+   ollama pull llama3.2:3b
    ```
-   GOOGLE_API_KEY=your-api-key-here
-   ```
 
-4. **Never commit this file.** Create a `.gitignore` in the project folder containing:
+3. Check it's there: `ollama list` should show `llama3.2:3b`.
+
+Ollama runs in the background after install (look for the llama icon in the system tray). If a script can't connect, open the Ollama app or run `ollama serve`.
+
+*Need better answers or tool calling later? `ollama pull qwen2.5:7b` (about 5 GB, slower on a laptop CPU).*
+
+4. If you ever add API keys (for example to switch to Gemini), keep them in a `.env` file and **never commit it.** Create a `.gitignore` in the project folder containing:
 
    ```
    .venv/
@@ -113,7 +120,7 @@ Pushing to GitHub is a required deliverable, so set this up early.
 
 1. Check Git is installed: `git --version`. If not, get it from [git-scm.com](https://git-scm.com/).
 2. Create a free account at [github.com](https://github.com/) if you don't have one.
-3. **One person** creates a repo (e.g. `sentinelai`) and adds the others as collaborators (repo → Settings → Collaborators).
+3. **One person** creates a repo (e.g. `Fraud-Detection-MultiAgent`) and adds the others as collaborators (repo → Settings → Collaborators).
 4. Initialise and push:
 
    ```bash
@@ -121,7 +128,7 @@ Pushing to GitHub is a required deliverable, so set this up early.
    git add .
    git commit -m "Initial setup"
    git branch -M main
-   git remote add origin https://github.com/<user>/sentinelai.git
+   git remote add origin https://github.com/YOUR-USERNAME/Fraud-Detection-MultiAgent.git
    git push -u origin main
    ```
 
@@ -131,16 +138,12 @@ Double-check `.env` is **not** in the pushed files before you share the repo.
 
 ## Step 7 — Verify it all works
 
-The single most useful check: confirm your API key actually talks to the LLM. Create `test.py`:
+The single most useful check: confirm Python can talk to the local LLM. Create `test.py`:
 
 ```python
-import os
-from dotenv import load_dotenv
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_ollama import ChatOllama
 
-load_dotenv()
-
-llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash")
+llm = ChatOllama(model="llama3.2:3b")
 response = llm.invoke("Reply with exactly: setup works")
 print(response.content)
 ```
@@ -151,15 +154,13 @@ Run it:
 python test.py
 ```
 
-If you see **setup works**, your whole chain is ready: Python → virtual environment → packages → API key → LLM. If it errors, the message almost always points at the key (Step 5) or the package install (Step 4).
-
-*(If a model name is rejected, Google AI Studio's "Get API key" page lists the current model names — model labels change occasionally.)*
+If you see **setup works**, your whole chain is ready: Python → virtual environment → packages → Ollama → LLM. The first reply can take 10–20 seconds while the model loads into memory. If it errors, it almost always points at Ollama not running or the model not pulled (Step 5), or the package install (Step 4).
 
 ---
 
 ## Agree these as a team before 9am
 
-- **One LLM provider** for everyone (don't mix Gemini and OpenAI across agents for the MVP).
+- **One LLM** for everyone — Ollama with `llama3.2:3b` (don't mix models or providers across agents for the MVP).
 - **Who owns which agent** — Orchestrator, Rules, Behavioural, Adjudicator, HITL. Natural split for a team of up to four.
 - **One person owns the GitHub repo** and adds the rest as collaborators.
 - **Sample data** — settle on one transaction dataset (a synthetic set like PaySim, or the classic credit-card fraud CSV) so everyone builds against the same thing.
