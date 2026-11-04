@@ -1,0 +1,13 @@
+customer_id,home_country,typical_amount_gbp,max_normal_amount_gbp,usual_categories,usual_hours,known_devices
+C001,GB,60,400,groceries|transport|dining,07:00-22:00,device_a1
+C002,FR,120,900,electronics|travel|dining,08:00-23:00,device_b2
+C003,GB,45,300,transport|groceries|fashion,07:00-21:00,device_c003_0|device_c003_1
+C004,GB,150,1200,electronics|health|transport,08:00-23:00,device_c004_0
+C005,DE,80,600,health|transport|travel,06:00-20:00,device_c005_0|device_c005_1
+C006,ES,35,250,groceries|health|entertainment,09:00-23:00,device_c006_0
+C007,IE,200,1500,electronics|groceries|travel,07:00-22:00,device_c007_0
+C008,GB,25,150,health|utilities|transport,10:00-22:00,device_c008_0|device_c008_1
+C009,NL,95,700,travel|groceries|utilities,07:00-23:00,device_c009_0
+C010,IT,60,450,utilities|fashion|dining,08:00-22:00,device_c010_0
+C011,FR,300,2500,electronics|fashion|groceries,06:00-22:00,device_c011_0
+C012,GB,70,500,utilities|transport|dining,07:00-20:00,device_c012_0|device_c012_1

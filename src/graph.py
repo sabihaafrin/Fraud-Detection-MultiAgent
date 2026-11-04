@@ -1,20 +1,3 @@
-"""The graph — this IS the orchestration.
-
-Flow:
-    START -> orchestrator -> rules -> behavioural -> adjudicator
-                                                        |
-                              (conditional on recommended_action)
-                                   /                         \\
-                          review  |                           | approve / decline
-                                  v                           v
-                           human_review                  finalise_auto
-                                  \\                         /
-                                   -----------> END <-------
-
-The checkpointer (MemorySaver) is what lets the graph pause at the human_review
-node and resume later with the human's verdict.
-"""
-
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import interrupt
@@ -27,12 +10,7 @@ from .state import FraudState
 
 
 def human_review_node(state: FraudState) -> dict:
-    """Pause the run and hand the case to a human.
 
-    interrupt() suspends the graph and surfaces this payload to the caller.
-    Execution resumes here — returning the human's verdict — once the caller
-    invokes the graph again with Command(resume=<verdict>).
-    """
     verdict = interrupt({
         "reason": "Borderline transaction — human decision required",
         "transaction": state["transaction"],

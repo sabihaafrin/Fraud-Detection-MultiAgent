@@ -1,11 +1,10 @@
-"""Run the demo: push each sample transaction through the graph.
-
-For borderline cases the graph interrupts; we print the case file, ask the
-human on the console, then resume the graph with their verdict.
-
-Run from the project root:   python -m src.main
+""" From the project root:
+    python -m src.main              # the 3 demo transactions (T1001-T1003)
+    python -m src.main --limit 20   # the first 20 transactions
+    python -m src.main --all        # every transaction in data/transactions.csv
 """
 
+import argparse
 import uuid
 
 from dotenv import load_dotenv
@@ -45,11 +44,18 @@ def run_one(graph, txn: dict) -> dict:
 
 
 def main():
+    parser = argparse.ArgumentParser(description="Run transactions through the fraud graph.")
+    parser.add_argument("--limit", type=int, default=3,
+                        help="number of transactions to run (default: 3, the demo set)")
+    parser.add_argument("--all", action="store_true", help="run every transaction")
+    args = parser.parse_args()
+    transactions = SAMPLE_TRANSACTIONS if args.all else SAMPLE_TRANSACTIONS[:args.limit]
+
     load_dotenv()
     graph = build_graph()
 
     outcomes = []
-    for txn in SAMPLE_TRANSACTIONS:
+    for txn in transactions:
         result = run_one(graph, txn)
         reviewer = "human" if result.get("human_reviewed") else "auto"
         outcomes.append((txn["id"], result["final_action"], reviewer))

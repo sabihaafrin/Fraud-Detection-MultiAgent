@@ -43,9 +43,14 @@ def _action_from_score(score: int) -> str:
     return "review"
 
 
+def adjudicate(rule_risk: int, behavioural_risk: int) -> tuple[int, str]:
+    """Combine the specialists' risks into an overall score and an action."""
+    score = min(rule_risk + behavioural_risk, 100)
+    return score, _action_from_score(score)
+
+
 def adjudicator_node(state: FraudState) -> dict:
-    score = min(state.get("rule_risk", 0) + state.get("behavioural_risk", 0), 100)
-    action = _action_from_score(score)
+    score, action = adjudicate(state.get("rule_risk", 0), state.get("behavioural_risk", 0))
 
     rationale = get_llm().invoke(PROMPT.format(
         rule_flags=state.get("rule_flags") or "none",

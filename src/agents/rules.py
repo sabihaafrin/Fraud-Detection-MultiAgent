@@ -9,8 +9,8 @@ from .. import config
 from ..state import FraudState
 
 
-def rules_node(state: FraudState) -> dict:
-    txn = state["transaction"]
+def evaluate_rules(txn: dict) -> tuple[list[str], int]:
+    """Return the triggered rule flags and this agent's risk (0-100)."""
     flags: list[str] = []
     risk = 0
 
@@ -35,6 +35,10 @@ def rules_node(state: FraudState) -> dict:
         flags.append("new_payee_high_amount")
         risk += 10
 
-    risk = min(risk, 100)
+    return flags, min(risk, 100)
+
+
+def rules_node(state: FraudState) -> dict:
+    flags, risk = evaluate_rules(state["transaction"])
     print(f"[Rules]        flags={flags or 'none'}  risk={risk}")
     return {"rule_flags": flags, "rule_risk": risk}

@@ -178,8 +178,12 @@ The model runs locally through Ollama, so there's no API key and no rate limit.
 
 #### `sample_data.py` — the demo data
 
-**What:** `CUSTOMER_HISTORY` (what "normal" looks like per customer) and three
-`SAMPLE_TRANSACTIONS`, each hand-picked to land in a different bucket:
+**What:** Loads `data/customers.csv` into `CUSTOMER_HISTORY` (what "normal"
+looks like per customer) and `data/transactions.csv` into `SAMPLE_TRANSACTIONS`
+(120 synthetic transactions, built by `scripts/generate_data.py`). The
+`scenario` / `is_fraud` label columns are split off into `LABELS`, so no agent or
+LLM prompt can see the answer. The first three rows are the hand-picked demo,
+each landing in a different bucket:
 
 - `T1001` — clean → should **approve**
 - `T1002` — huge amount, blocklisted device, impossible travel → should **decline**

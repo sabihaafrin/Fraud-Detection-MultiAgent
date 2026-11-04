@@ -58,12 +58,17 @@ def _signals(txn: dict, history: dict) -> list[str]:
     return signals
 
 
+def evaluate_behaviour(txn: dict, history: dict) -> tuple[list[str], int]:
+    """Return the out-of-character signals and this agent's risk (0-100)."""
+    signals = _signals(txn, history)
+    return signals, min(sum(config.BEHAVIOURAL_WEIGHTS[s] for s in signals), 100)
+
+
 def behavioural_node(state: FraudState) -> dict:
     txn = state["transaction"]
     history = state.get("customer_history", {})
 
-    signals = _signals(txn, history)
-    risk = min(sum(config.BEHAVIOURAL_WEIGHTS[s] for s in signals), 100)
+    signals, risk = evaluate_behaviour(txn, history)
 
     reasoning = get_llm().invoke(PROMPT.format(
         history=history,

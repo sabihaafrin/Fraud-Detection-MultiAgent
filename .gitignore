@@ -1,4 +1,9 @@
 .venv/
 .env
 __pycache__/
-data/
+
+# Large downloaded datasets stay local; the small synthetic CSVs are shared.
+data/*
+!data/customers.csv
+!data/transactions.csv
+results/
