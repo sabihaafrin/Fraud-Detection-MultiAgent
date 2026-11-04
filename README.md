@@ -6,8 +6,6 @@ their findings into one risk score, and borderline cases **pause and escalate
 to a human** before a final decision is made. A **Streamlit dashboard** runs
 the demo, holds the human review queue and shows the evaluation results.
 
-*Agentic AI Bootcamp — DAIM Lab, University of Hull — 4 November 2026*
-
 ---
 
 ## Quick start
