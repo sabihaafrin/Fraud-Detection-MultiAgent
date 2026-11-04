@@ -1,4 +1,4 @@
-# SentinelAI — Setup Guide
+# Fraud Detection System — Setup Guide
 
 *Agentic AI Bootcamp — DAIM Lab, University of Hull — 4 November 2026*
 
@@ -48,7 +48,7 @@ If it's below 3.11, or Python isn't installed, get it from [python.org/downloads
 A virtual environment keeps this project's packages isolated so they don't clash with anything else on your machine.
 
 ```bash
-mkdir sentinelai && cd sentinelai
+mkdir Fraud-Detection-MultiAgent && cd Fraud-Detection-MultiAgent
 
 # create the environment
 python -m venv .venv

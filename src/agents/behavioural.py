@@ -8,12 +8,18 @@ good at — turning the signals into a short explanation a human reviewer can
 read.
 
 It deliberately ignores hard rules (blocklists, velocity) — that is the Rules
-agent's job.
+agent's job. If the LLM is unavailable, a template explanation is used and
+the decision is unaffected.
 """
 
+import logging
+
 from .. import config
-from ..llm import get_llm
+from ..llm import explain
+from ..observability import traced
 from ..state import FraudState
+
+log = logging.getLogger(__name__)
 
 
 PROMPT = """You are the Behavioural Analysis agent in a fraud detection system.
@@ -64,23 +70,27 @@ def evaluate_behaviour(txn: dict, history: dict) -> tuple[list[str], int]:
     return signals, min(sum(config.BEHAVIOURAL_WEIGHTS[s] for s in signals), 100)
 
 
+@traced("behavioural")
 def behavioural_node(state: FraudState) -> dict:
     txn = state["transaction"]
     history = state.get("customer_history", {})
 
     signals, risk = evaluate_behaviour(txn, history)
 
-    reasoning = get_llm().invoke(PROMPT.format(
+    fallback = (f"Out-of-character signals: {', '.join(signals)} (behavioural risk {risk}/100)."
+                if signals else "Fits the customer's normal behaviour (behavioural risk 0/100).")
+    reasoning, used_fallback = explain(PROMPT.format(
         history=history,
         txn=txn,
         signals=signals or "none",
         risk=risk,
-    )).content.strip()
+    ), fallback)
 
-    print(f"[Behavioural]  signals={signals or 'none'}  risk={risk}")
+    log.info(f"[Behavioural]  signals={signals or 'none'}  risk={risk}")
     return {
         "behavioural_flags": signals,
         "behavioural_anomaly": bool(signals),
         "behavioural_risk": risk,
         "behavioural_reasoning": reasoning,
+        "llm_fallbacks": ["behavioural"] if used_fallback else [],
     }

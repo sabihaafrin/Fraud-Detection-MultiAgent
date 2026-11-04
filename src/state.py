@@ -5,10 +5,13 @@ node's returned dict into it, so the Adjudicator can see what the Rules and
 Behavioural agents wrote earlier in the run.
 
 total=False means nodes may fill keys in gradually — the input only needs to
-provide `transaction`.
+provide `transaction`. Rules and Behavioural run in parallel, so the keys they
+both write (`trace`, `llm_fallbacks`) use an add reducer: their updates are
+concatenated instead of one overwriting the other.
 """
 
-from typing import Any, TypedDict
+import operator
+from typing import Annotated, Any, TypedDict
 
 
 class FraudState(TypedDict, total=False):
@@ -36,3 +39,9 @@ class FraudState(TypedDict, total=False):
     # Final outcome
     final_action: str                    # approve | decline (what actually happens)
     human_reviewed: bool                 # was a human involved?
+    reviewer: str                        # who made the human decision
+    review_note: str                     # why they decided that way
+
+    # Observability (appended to by every node)
+    trace: Annotated[list[dict], operator.add]          # [{"agent": ..., "ms": ...}]
+    llm_fallbacks: Annotated[list[str], operator.add]   # agents whose LLM call failed

@@ -1,0 +1,19 @@
+[project]
+name = "fraud-detection-system"
+version = "0.1.0"
+description = "Multi-agent fraud detection with LangGraph and a human-in-the-loop checkpoint"
+readme = "README.md"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = [".venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]

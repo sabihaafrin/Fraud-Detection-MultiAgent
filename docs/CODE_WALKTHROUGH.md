@@ -1,4 +1,4 @@
-# SentinelAI — Code Walkthrough
+# Fraud Detection System — Code Walkthrough
 
 *A guided tour of the codebase, in the order it makes sense to understand it.*
 

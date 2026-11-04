@@ -1,9 +1,14 @@
 .venv/
 .env
 __pycache__/
+.pytest_cache/
+.ruff_cache/
 
 # Large downloaded datasets stay local; the small synthetic CSVs are shared.
 data/*
 !data/customers.csv
 !data/transactions.csv
-results/
+
+# Evaluation outputs are committed as evidence; runtime state is not.
+results/audit_log.jsonl
+results/checkpoints.sqlite*

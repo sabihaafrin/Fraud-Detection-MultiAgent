@@ -5,17 +5,23 @@
 """
 
 import argparse
+import getpass
+import logging
 import uuid
 
 from dotenv import load_dotenv
 from langgraph.types import Command
 
 from .graph import build_graph
+from .models import InvalidTransaction
+from .observability import setup_logging
 from .sample_data import SAMPLE_TRANSACTIONS
 
+log = logging.getLogger(__name__)
 
-def ask_human(payload: dict) -> str:
-    """Show the case file and get an approve/decline verdict."""
+
+def ask_human(payload: dict) -> dict:
+    """Show the case file and get an approve/decline verdict, with a note."""
     print("\n  ----- HUMAN REVIEW REQUIRED -----")
     print(f"  Transaction : {payload['transaction']['id']} "
           f"(£{payload['transaction']['amount_gbp']:,.2f})")
@@ -25,7 +31,8 @@ def ask_human(payload: dict) -> str:
     while True:
         verdict = input("  Your decision [approve/decline]: ").strip().lower()
         if verdict in ("approve", "decline"):
-            return verdict
+            note = input("  Reason (optional): ").strip()
+            return {"decision": verdict, "reviewer": getpass.getuser(), "note": note}
         print("  Please type 'approve' or 'decline'.")
 
 
@@ -52,11 +59,16 @@ def main():
     transactions = SAMPLE_TRANSACTIONS if args.all else SAMPLE_TRANSACTIONS[:args.limit]
 
     load_dotenv()
+    setup_logging()
     graph = build_graph()
 
     outcomes = []
     for txn in transactions:
-        result = run_one(graph, txn)
+        try:
+            result = run_one(graph, txn)
+        except InvalidTransaction as e:
+            log.error(f"[Rejected]     {txn.get('id', '?')}: {e}")
+            continue
         reviewer = "human" if result.get("human_reviewed") else "auto"
         outcomes.append((txn["id"], result["final_action"], reviewer))
         print(f"[Outcome]      {txn['id']} -> {result['final_action'].upper()} ({reviewer})")

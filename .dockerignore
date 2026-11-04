@@ -1,0 +1,8 @@
+.venv
+.git
+.env
+data/*
+!data/customers.csv
+!data/transactions.csv
+results
+__pycache__

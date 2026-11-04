@@ -1,9 +1,9 @@
-# SentinelAI — Project Proposal
+# Fraud Detection System — Project Proposal
 
 *Agentic AI Bootcamp — DAIM Lab, University of Hull — 4 November 2026*
 
-**Team name:** SentinelAI
-**Project title:** SentinelAI — a multi-agent fraud detection system
+**Team name:** Fraud Detection System
+**Project title:** Fraud Detection System — a multi-agent fraud detection system
 **Agent type:** Fraud Detection Agent (multi-agent)
 **Framework:** LangGraph (ReAct loop + human-in-the-loop checkpoint)
 

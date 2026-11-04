@@ -1,17 +1,27 @@
 """Orchestrator — the entry node.
 
 In a LangGraph system the *routing* is the graph itself (see graph.py). This
-node does the orchestrator's setup job: it looks up the customer's history and
-attaches it to the state so the downstream specialists have what they need.
+node does the orchestrator's setup job: it validates the transaction (nothing
+unchecked reaches the agents or the LLM prompts), then retrieves the customer's
+history through the `get_customer_profile` tool so the downstream specialists
+have what they need.
 """
 
-from ..sample_data import CUSTOMER_HISTORY
+import logging
+
+from ..models import validate_transaction
+from ..observability import traced
 from ..state import FraudState
+from ..tools import get_customer_profile
+
+log = logging.getLogger(__name__)
 
 
+@traced("orchestrator")
 def orchestrator_node(state: FraudState) -> dict:
-    txn = state["transaction"]
-    history = CUSTOMER_HISTORY.get(txn["customer_id"], {})
-    print(f"\n{'=' * 60}\n[Orchestrator] Received {txn['id']} "
-          f"(customer {txn['customer_id']}, £{txn['amount_gbp']:,.2f})")
-    return {"customer_history": history}
+    txn = validate_transaction(state["transaction"])
+    history = get_customer_profile.invoke({"customer_id": txn["customer_id"]})
+    log.info(f"\n{'=' * 60}\n[Orchestrator] Received {txn['id']} "
+             f"(customer {txn['customer_id']}, £{txn['amount_gbp']:,.2f})"
+             + ("" if history else "  — no history on file"))
+    return {"transaction": txn, "customer_history": history}

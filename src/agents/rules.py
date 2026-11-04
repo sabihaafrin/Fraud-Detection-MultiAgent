@@ -5,8 +5,13 @@ a fixed amount to this agent's risk contribution. The Adjudicator weighs this
 against the Behavioural agent's view.
 """
 
+import logging
+
 from .. import config
+from ..observability import traced
 from ..state import FraudState
+
+log = logging.getLogger(__name__)
 
 
 def evaluate_rules(txn: dict) -> tuple[list[str], int]:
@@ -38,7 +43,8 @@ def evaluate_rules(txn: dict) -> tuple[list[str], int]:
     return flags, min(risk, 100)
 
 
+@traced("rules")
 def rules_node(state: FraudState) -> dict:
     flags, risk = evaluate_rules(state["transaction"])
-    print(f"[Rules]        flags={flags or 'none'}  risk={risk}")
+    log.info(f"[Rules]        flags={flags or 'none'}  risk={risk}")
     return {"rule_flags": flags, "rule_risk": risk}

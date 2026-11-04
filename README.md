@@ -1,35 +1,100 @@
-# SentinelAI
+# Fraud Detection System
 
 A multi-agent fraud detection system built with **LangGraph**. A transaction
 flows through specialist agents that each judge it, an adjudicator combines
 their findings into one risk score, and borderline cases **pause and escalate
-to a human** before a final decision is made.
+to a human** before a final decision is made. A **Streamlit dashboard** runs
+the demo, holds the human review queue and shows the evaluation results.
 
 *Agentic AI Bootcamp — DAIM Lab, University of Hull — 4 November 2026*
+
+---
+
+## Quick start
+
+Set up your machine first with [docs/setup-guide.md](docs/setup-guide.md):
+Python, a virtual environment, and Ollama with `ollama pull llama3.2:3b`. Then,
+from the project root with `(.venv)` active:
+
+```bash
+pip install -r requirements.txt
+streamlit run app.py          # the dashboard: run the demo, review cases, see results
+```
+
+Other entry points:
+
+```bash
+python -m src.main            # CLI demo: T1001-T1003 (approve / decline / human review)
+python -m src.main --limit 20 # more volume (--all for all 120: slow, ~2 LLM calls each)
+python -m src.evaluate        # accuracy against the labels (about 1 second, no LLM)
+pytest                        # 51 tests, about 5 seconds, no Ollama needed
+python -m src.mcp_server      # expose the fraud checks to other agents over MCP
+python test.py                # check the LLM responds: prints "setup works"
+```
+
+Run modules as `python -m src.main`, not `python src/main.py`, because the code
+uses package imports.
 
 ---
 
 ## The flow
 
 ```
-START → orchestrator → rules → behavioural → adjudicator ─┬─ approve/decline → finalise_auto → END
-                                                          └─ review → human_review (⏸ pause) → END
+START → orchestrator ─┬→ rules ───────┬→ adjudicator ─┬→ approve/decline → finalise_auto ─┬→ audit → END
+                      └→ behavioural ─┘               └→ review → human_review (⏸ pause) ─┘
 ```
 
 | Agent | What it does | LLM? |
 |---|---|---|
-| **Orchestrator** | Attaches the customer's history to the case | No |
-| **Rules** | Hard, deterministic checks (amount, velocity, impossible travel, blocklist) | No |
-| **Behavioural** | Checks whether the transaction is out of character for *this* customer (amount, hour, category, country) | Explains |
-| **Adjudicator** | Combines both into one 0–100 risk score + rationale | Explains |
-| **Human review** | Receives borderline cases, returns an approve/decline verdict | Human |
+| **Orchestrator** | Validates the transaction, then retrieves the customer's history via the `get_customer_profile` tool | No |
+| **Rules** | Hard, deterministic checks: amount, velocity, impossible travel, blocklist | No |
+| **Behavioural** | Checks whether the transaction is out of character for *this* customer: amount, hour, category, country | Explains |
+| **Adjudicator** | Combines both into one 0–100 risk score, a routing decision and a rationale | Explains |
+| **Human review** | Receives borderline cases and returns an approve/decline verdict, with reviewer and reason | Human |
+| **Audit** | Writes every decision to the audit log, whichever path the case took | No |
 
-The **graph itself is the orchestration** — the edges decide which agent runs
-when. Every score, and the score → action mapping (`config.py`), is computed in
-Python, so decisions are reproducible and auditable. The LLM turns the findings
-into explanations a human reviewer can read — it never moves a score. (Small
-local models like `llama3.2:3b` get numeric comparisons wrong, so letting them
-score made the demo unreliable.)
+The **graph itself is the orchestration**: its edges decide which agent runs
+when. Rules and Behavioural are independent, so they run **in parallel**, and the
+Adjudicator waits for both. Every score, and the mapping from score to action
+(`config.py`), is computed in Python, so decisions are reproducible and
+auditable. The LLM turns the findings into explanations a human reviewer can
+read, and it never moves a score. We tested letting it score: small local
+models like `llama3.2:3b` got numeric comparisons wrong, so the demo was
+unreliable.
+
+If Ollama is down or times out, the agents fall back to template explanations,
+and the decision is unaffected.
+
+---
+
+## The dashboard
+
+`streamlit run app.py` opens three tabs:
+
+| Tab | What it's for |
+|---|---|
+| **Run** | Pick transactions (the demo three are preselected) or type one in. Watch each agent's flags, risk, explanation and timing |
+| **Review queue** | Cases the graph paused on. Read the case file and the customer's normal behaviour, add a reason, then **Approve** or **Decline**. The graph resumes with your verdict |
+| **Audit log** | Every decision, with who made each human decision and why. Downloadable |
+
+Paused cases are checkpointed to SQLite (`results/checkpoints.sqlite`), so the
+review queue survives a restart.
+
+**Demo script for the showcase:** Run tab → run T1001–T1003 → T1001 approved and
+T1002 declined automatically, T1003 paused → Review queue → decline T1003 with
+a reason → Audit log shows all three, including who declined T1003.
+
+---
+
+## Results
+
+On the 120-transaction labelled set (full report:
+[results/evaluation_report.md](results/evaluation_report.md); method and
+limitations: [docs/EVALUATION.md](docs/EVALUATION.md)):
+
+| Fraud detected | Genuine customers declined | Sent to a human | Fraud missed |
+|---|---|---|---|
+| **87%** | **0%** | 9% | 13% (3 low-value, single-signal cases) |
 
 ---
 
@@ -37,8 +102,10 @@ score made the demo unreliable.)
 
 ```
 Fraud-Detection-MultiAgent/
-├── README.md
-├── requirements.txt
+├── app.py                 # Streamlit dashboard
+├── README.md · SECURITY.md · requirements.txt · pyproject.toml
+├── Dockerfile · docker-compose.yml   # dashboard + Ollama in containers
+├── .github/workflows/ci.yml          # lint, tests, evaluation, dependency audit
 ├── .env.example           # copy to .env (git-ignored)
 ├── test.py                # quick check that the LLM responds
 ├── data/
@@ -46,18 +113,30 @@ Fraud-Detection-MultiAgent/
 │   └── transactions.csv   # 120 synthetic transactions (+ scenario / is_fraud labels)
 ├── scripts/
 │   └── generate_data.py   # rebuilds the two CSVs (fixed seed)
+├── results/
+│   ├── evaluation_report.md     # accuracy summary (regenerated by src.evaluate)
+│   ├── evaluation.csv           # per-transaction results
+│   └── sample_audit_log.jsonl   # audit log from a real dashboard run
 ├── docs/
 │   ├── setup-guide.md     # machine setup, step by step
 │   ├── fraud-agents-proposal.md
-│   └── CODE_WALKTHROUGH.md
+│   ├── CODE_WALKTHROUGH.md
+│   ├── EVALUATION.md      # method, results, limitations
+│   └── GOVERNANCE.md      # who decides what, human oversight, audit trail
+├── tests/                 # pytest: agents, graph & HITL, security, evaluation gate
 └── src/
-    ├── config.py          # all thresholds & rule parameters — tune here
+    ├── config.py          # all thresholds & weights: tune here
     ├── state.py           # the shared state passed between agents
-    ├── llm.py             # LLM factory (swap provider in one place)
+    ├── models.py          # transaction validation (and prompt-injection guard)
+    ├── llm.py             # LLM factory + resilient explain() with fallback
+    ├── tools.py           # LangChain tools: customer profile lookup, scoring
     ├── sample_data.py     # loads the CSVs; keeps labels away from the agents
-    ├── graph.py           # nodes, edges, routing, HITL interrupt
-    ├── main.py            # entry point
+    ├── graph.py           # nodes, parallel edges, routing, HITL interrupt, audit
+    ├── audit.py           # append-only audit log
+    ├── observability.py   # logging + per-agent timing trace
+    ├── main.py            # CLI entry point
     ├── evaluate.py        # accuracy report against the labels
+    ├── mcp_server.py      # MCP server exposing read-only fraud tools
     └── agents/
         ├── orchestrator.py
         ├── rules.py
@@ -67,48 +146,18 @@ Fraud-Detection-MultiAgent/
 
 ---
 
-## Run it
-
-First set up your machine with [docs/setup-guide.md](docs/setup-guide.md)
-(Python, virtual environment, Ollama + `ollama pull llama3.2:3b`). Then, from
-the project root with `(.venv)` active:
-
-```bash
-pip install -r requirements.txt
-cp .env.example .env          # optional: change LLM_MODEL here
-python test.py                # should print: setup works
-python -m src.main            # the 3-transaction demo
-python -m src.main --limit 20 # more volume
-python -m src.main --all      # all 120 (slow: ~2 LLM calls each, ~11 human reviews)
-python -m src.evaluate        # accuracy against the labels (fast, no LLM)
-```
-
-`src.evaluate` runs the same scoring functions the agents use, but skips the
-LLM explanations and the console pause, so all 120 transactions take about a
-second. Add `--details` to list every missed fraud and false decline.
-Per-transaction results go to `results/evaluation.csv` (git-ignored).
-
-Run it as `python -m src.main`, not `python src/main.py` — the code uses
-package imports.
-
-You'll see each agent report in turn. The clean transaction auto-approves, the
-obvious-fraud one auto-declines, and the borderline one stops and asks you to
-decide on the console.
-
----
-
 ## The data
 
-`data/transactions.csv` is synthetic, generated by `scripts/generate_data.py`
-(re-run it to rebuild the files; the seed is fixed). Public datasets like PaySim
+`data/transactions.csv` is synthetic, generated by `scripts/generate_data.py`.
+Re-run it to rebuild the files; the seed is fixed. Public datasets like PaySim
 don't carry the fields the agents use (country, device, category, hour, payee),
 so we generate data that does. It contains three kinds of transaction:
 
 | Scenario | Count | What it looks like |
 |---|---|---|
 | clean | 81 | Fits the customer's normal amount, hours, categories and country |
-| fraud | 18 | Several strong signals: blocklisted/new device, impossible travel, velocity, huge amount |
-| borderline | 21 | One or two out-of-character signals, nothing damning — about 30% are real fraud |
+| fraud | 18 | Several strong signals: blocklisted or new device, impossible travel, velocity, huge amount |
+| borderline | 21 | One or two out-of-character signals, nothing damning. About 30% are real fraud |
 
 The `scenario` and `is_fraud` columns are ground truth for measuring accuracy.
 `sample_data.py` strips them off into `LABELS`, so the agents never see them.
@@ -118,22 +167,54 @@ The `scenario` and `is_fraud` columns are ground truth for measuring accuracy.
 ## How the human-in-the-loop works
 
 The `human_review` node calls LangGraph's `interrupt()`, which suspends the
-graph. `main.py` catches the interrupt, prints the case file, asks for a
-verdict, then resumes the graph with `Command(resume=verdict)`. The
-`MemorySaver` checkpointer is what makes pause-and-resume possible — without it,
-`interrupt()` has nowhere to save the paused state.
+graph. The caller (the dashboard's Review queue, or `main.py` on the console)
+shows the case file, collects a verdict, and resumes the graph with
+`Command(resume={"decision": ..., "reviewer": ..., "note": ...})`. Only
+`approve` or `decline` is accepted. The checkpointer (MemorySaver in the CLI,
+SQLite in the dashboard) is what makes pause-and-resume possible. See
+[docs/GOVERNANCE.md](docs/GOVERNANCE.md).
 
 ---
 
-## Extending it (stretch goals)
+## Tools and MCP
 
-- **Real data** — replace `sample_data.py` with a loader for another dataset.
-  Nothing else changes as long as the transaction fields stay the same.
-- **Network agent** — add a fourth specialist that checks whether the device /
-  IP / email links to previously flagged accounts. One new node + one edge.
-- **Case report** — have the adjudicator also draft a written case summary for
-  the human reviewer.
-- **Dashboard** — log every outcome and chart approve/decline/review rates.
+`src/tools.py` defines LangChain tools: `get_customer_profile`, which the
+Orchestrator uses for retrieval, and `score_transaction`. `src/mcp_server.py`
+serves them over MCP with an `evaluation_summary` tool, so Claude Desktop, an
+IDE assistant or another agent can call the fraud checks. The tools are
+**read-only**: an external agent can ask how risky a payment is, but it can't
+approve or decline one.
+
+```json
+{"mcpServers": {"fraud-detection-system": {
+  "command": "<project>/.venv/Scripts/python.exe",
+  "args": ["-m", "src.mcp_server"], "cwd": "<project>"}}}
+```
+
+---
+
+## Security, reliability and quality
+
+- **Security:** input validation blocks prompt injection and smuggled fields,
+  the LLM can't change decisions, MCP is read-only, dependencies are pinned and
+  `pip-audit` runs in CI, and no API keys are needed. See [SECURITY.md](SECURITY.md).
+- **Reliability:** LLM calls have a timeout, a retry and a template fallback.
+  Paused reviews persist in SQLite.
+- **Observability:** every decision is in the audit log with per-agent timings,
+  the model and the thresholds. Data generation is seeded, so it's reproducible.
+- **Testing:** 51 pytest tests covering the rules, behavioural signals,
+  thresholds, the full graph, HITL pause and resume, LLM outage, persistence,
+  prompt injection and an accuracy gate. `ruff` lints, and CI runs it all on
+  every push.
+
+---
+
+## Deployment
+
+```bash
+docker compose up                                  # dashboard on http://localhost:8501
+docker compose exec ollama ollama pull llama3.2:3b # first run only
+```
 
 ---
 
@@ -141,6 +222,17 @@ verdict, then resumes the graph with `Command(resume=verdict)`. The
 
 Everything routes through `get_llm()` in `src/llm.py`, which currently uses a
 local Ollama model (`llama3.2:3b`). To try a different Ollama model, pull it and
-set `LLM_MODEL` in `.env`. To use a hosted provider instead (e.g. Gemini):
+set `LLM_MODEL` in `.env`. To use a hosted provider instead (e.g. Gemini),
 `pip install langchain-google-genai`, swap the import and class in that one
 function, and set `GOOGLE_API_KEY` in `.env`. No agent code changes.
+
+---
+
+## Extending it
+
+- **Device-history or Network agent:** the three missed frauds need a new
+  signal, not lower thresholds. Add one node and two edges in `graph.py`.
+- **Real data:** replace `sample_data.py` with a loader for another dataset.
+  Nothing else changes, as long as it produces the same fields.
+- **Authentication:** have the reviewer identity come from a login rather than
+  a text box.
