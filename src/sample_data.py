@@ -1,24 +1,7 @@
-"""Loads the demo data from data/customers.csv and data/transactions.csv.
-
-The CSVs are synthetic (see scripts/generate_data.py) and include the three
-hand-picked demo transactions as T1001-T1003, one per decision bucket:
-T1001 clean -> approve, T1002 egregious -> decline, T1003 borderline -> review.
-
-The `scenario` and `is_fraud` columns are ground-truth labels for evaluation.
-They are split off into LABELS so the agents (and the LLM prompts, which see
-the whole transaction) never get a peek at the answer.
-
-Swap this module for a different loader (e.g. a real dataset) when you want —
-nothing else in the system needs to change, as long as it produces the same
-fields.
-"""
-
 import csv
 from pathlib import Path
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
-
-LABEL_FIELDS = ("scenario", "is_fraud")
 
 
 def _bool(value: str) -> bool:
@@ -40,6 +23,7 @@ def _load_customers() -> dict[str, dict]:
         }
 
 
+# The scenario and is_fraud columns are kept separate so the agents never see them.
 def _load_transactions() -> tuple[list[dict], dict[str, dict]]:
     transactions, labels = [], {}
     with open(DATA_DIR / "transactions.csv", newline="", encoding="utf-8") as f:
@@ -64,9 +48,5 @@ def _load_transactions() -> tuple[list[dict], dict[str, dict]]:
     return transactions, labels
 
 
-# One entry per customer: what "normal" looks like for them.
 CUSTOMER_HISTORY = _load_customers()
-
-# Every transaction, without labels. The first three are the classic demo.
 SAMPLE_TRANSACTIONS, LABELS = _load_transactions()
-DEMO_TRANSACTIONS = SAMPLE_TRANSACTIONS[:3]

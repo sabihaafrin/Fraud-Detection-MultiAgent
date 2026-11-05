@@ -1,12 +1,3 @@
-"""Orchestrator — the entry node.
-
-In a LangGraph system the *routing* is the graph itself (see graph.py). This
-node does the orchestrator's setup job: it validates the transaction (nothing
-unchecked reaches the agents or the LLM prompts), then retrieves the customer's
-history through the `get_customer_profile` tool so the downstream specialists
-have what they need.
-"""
-
 import logging
 
 from ..models import validate_transaction
@@ -23,5 +14,5 @@ def orchestrator_node(state: FraudState) -> dict:
     history = get_customer_profile.invoke({"customer_id": txn["customer_id"]})
     log.info(f"\n{'=' * 60}\n[Orchestrator] Received {txn['id']} "
              f"(customer {txn['customer_id']}, £{txn['amount_gbp']:,.2f})"
-             + ("" if history else "  — no history on file"))
+             + ("" if history else "  (no history on file)"))
     return {"transaction": txn, "customer_history": history}

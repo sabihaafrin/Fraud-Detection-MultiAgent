@@ -1,10 +1,8 @@
-"""Input validation, prompt-injection resistance and decision integrity."""
-
 import pytest
 
 from src.graph import build_graph
 from src.models import InvalidTransaction, validate_transaction
-from src.sample_data import SAMPLE_TRANSACTIONS
+from src.sample_data import LABELS, SAMPLE_TRANSACTIONS
 from src.tools import score_transaction
 
 VALID = dict(SAMPLE_TRANSACTIONS[0])
@@ -29,7 +27,6 @@ def test_malformed_or_injected_fields_are_rejected(field, value):
 
 
 def test_extra_fields_are_rejected():
-    """Stops label leakage (is_fraud) and smuggled instructions alike."""
     with pytest.raises(InvalidTransaction):
         validate_transaction({**VALID, "is_fraud": False})
     with pytest.raises(InvalidTransaction):
@@ -44,7 +41,6 @@ def test_graph_rejects_invalid_transaction_before_any_agent(fake_llm):
 
 
 def test_llm_cannot_change_the_decision(monkeypatch, demo):
-    """Even if the LLM 'says' approve, the score and routing are computed."""
     from langchain_core.language_models.fake_chat_models import FakeListChatModel
 
     from src import llm
@@ -60,3 +56,8 @@ def test_llm_cannot_change_the_decision(monkeypatch, demo):
 def test_score_tool_validates_input():
     with pytest.raises(InvalidTransaction):
         score_transaction.invoke({"transaction": {**VALID, "category": "DROP TABLE"}})
+
+
+def test_labels_never_reach_the_agents():
+    assert set(LABELS) == {t["id"] for t in SAMPLE_TRANSACTIONS}
+    assert all("is_fraud" not in t and "scenario" not in t for t in SAMPLE_TRANSACTIONS)

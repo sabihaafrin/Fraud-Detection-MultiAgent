@@ -1,9 +1,3 @@
-""" From the project root:
-    python -m src.main              # the 3 demo transactions (T1001-T1003)
-    python -m src.main --limit 20   # the first 20 transactions
-    python -m src.main --all        # every transaction in data/transactions.csv
-"""
-
 import argparse
 import getpass
 import logging
@@ -21,7 +15,6 @@ log = logging.getLogger(__name__)
 
 
 def ask_human(payload: dict) -> dict:
-    """Show the case file and get an approve/decline verdict, with a note."""
     print("\n  ----- HUMAN REVIEW REQUIRED -----")
     print(f"  Transaction : {payload['transaction']['id']} "
           f"(£{payload['transaction']['amount_gbp']:,.2f})")
@@ -37,11 +30,9 @@ def ask_human(payload: dict) -> dict:
 
 
 def run_one(graph, txn: dict) -> dict:
-    # A unique thread_id per transaction keeps each run's checkpoint separate.
     config = {"configurable": {"thread_id": str(uuid.uuid4())}}
     result = graph.invoke({"transaction": txn}, config=config)
 
-    # If the graph paused at human_review, result carries an interrupt.
     if "__interrupt__" in result:
         payload = result["__interrupt__"][0].value
         verdict = ask_human(payload)

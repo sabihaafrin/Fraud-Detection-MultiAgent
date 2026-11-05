@@ -1,13 +1,3 @@
-"""Adjudicator agent — combines the specialists into one decision.
-
-The overall risk score is the Rules and Behavioural contributions added
-together (capped at 100), and the score -> action mapping is a deterministic
-threshold step (see config.py). Both are kept out of the LLM so routing is
-defensible and reproducible — small local models are unreliable at arithmetic
-and would over- or under-score. The LLM writes the rationale a human reviewer
-reads; if it is unavailable, a template rationale is used instead.
-"""
-
 import logging
 
 from .. import config
@@ -33,7 +23,7 @@ Behavioural agent (fit to customer's history):
 
 Transaction: {txn}
 
-Decision (already made — explain it, do not change it):
+Decision (already made; explain it, do not change it):
 - Overall risk score: {risk_score}/100
 - Recommended action: {action}
 
@@ -51,10 +41,6 @@ def _action_from_score(score: int, approve_below: int, decline_at_or_above: int)
 def adjudicate(rule_risk: int, behavioural_risk: int,
                approve_below: int | None = None,
                decline_at_or_above: int | None = None) -> tuple[int, str]:
-    """Combine the specialists' risks into an overall score and an action.
-
-    Thresholds default to config.py; pass others to test alternatives.
-    """
     score = min(rule_risk + behavioural_risk, 100)
     action = _action_from_score(
         score,

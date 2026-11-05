@@ -1,5 +1,3 @@
-"""End-to-end tests of the LangGraph flow, human-in-the-loop and recovery."""
-
 import pytest
 from langgraph.types import Command
 
@@ -54,7 +52,7 @@ def test_rules_and_behavioural_both_run_and_are_traced(fake_llm, demo):
     result = run(build_graph(), demo["T1001"])
     agents = [step["agent"] for step in result["trace"]]
     assert agents[0] == "orchestrator"
-    assert set(agents[1:3]) == {"rules", "behavioural"}   # parallel: either order
+    assert set(agents[1:3]) == {"rules", "behavioural"}
     assert agents[3] == "adjudicator"
     assert all(step["ms"] >= 0 for step in result["trace"])
 
@@ -85,7 +83,6 @@ def test_human_decision_is_audited_with_reviewer(fake_llm, demo):
 
 
 def test_llm_outage_falls_back_without_changing_decision(broken_llm, demo):
-    """Ollama down: the pipeline still decides, with template explanations."""
     result = run(build_graph(), demo["T1002"])
     assert result["final_action"] == "decline"
     assert result["risk_score"] == 100
@@ -95,8 +92,6 @@ def test_llm_outage_falls_back_without_changing_decision(broken_llm, demo):
 
 
 def test_paused_case_survives_restart_with_sqlite(fake_llm, demo, tmp_path):
-    """With a SQLite checkpointer, a paused review can be resumed by a new
-    graph instance — e.g. after the dashboard restarts."""
     import sqlite3
 
     from langgraph.checkpoint.sqlite import SqliteSaver

@@ -1,18 +1,3 @@
-"""Fraud Detection System dashboard — run the demo, review flagged cases, see the audit log.
-
-    streamlit run app.py
-
-Tabs:
-  Run           push transactions (from the dataset, or one you enter) through
-                the multi-agent graph and watch each agent's findings
-  Review queue  cases the graph paused on; approve or decline as the human
-                reviewer — the graph resumes with your verdict
-  Audit log     every decision the system has made, and who made it
-
-Paused cases are checkpointed to SQLite (results/checkpoints.sqlite), so the
-review queue survives a dashboard restart.
-"""
-
 import json
 import os
 import sqlite3
@@ -42,8 +27,6 @@ setup_logging()
 st.set_page_config(page_title="Fraud Detection System", page_icon="🛡️", layout="wide")
 
 
-# --- Graph and checkpoints ------------------------------------------------------
-
 @st.cache_resource
 def get_graph():
     CHECKPOINT_DB.parent.mkdir(exist_ok=True)
@@ -53,7 +36,6 @@ def get_graph():
 
 
 def pending_reviews() -> list[dict]:
-    """Every thread currently paused at human_review, oldest first."""
     graph, saver = get_graph()
     threads = dict.fromkeys(c.config["configurable"]["thread_id"] for c in saver.list(None))
     cases = []
@@ -81,11 +63,9 @@ def ollama_status() -> tuple[bool, str]:
         if model_name() in models:
             return True, f"Ollama running · `{model_name()}` ready"
         return False, f"Ollama running, but `{model_name()}` not pulled"
-    except Exception:  # noqa: BLE001
-        return False, "Ollama not reachable — explanations will use templates"
+    except Exception:
+        return False, "Ollama not reachable, explanations will use templates"
 
-
-# --- Shared rendering ---------------------------------------------------------
 
 def render_findings(state: dict) -> None:
     c1, c2, c3 = st.columns(3)
@@ -98,7 +78,7 @@ def render_findings(state: dict) -> None:
     st.markdown(f"**Behavioural agent:** {state.get('behavioural_reasoning', '')}")
     st.markdown(f"**Adjudicator rationale:** {state.get('rationale', '')}")
     if state.get("llm_fallbacks"):
-        st.caption(f"LLM unavailable for {', '.join(state['llm_fallbacks'])} — "
+        st.caption(f"LLM unavailable for {', '.join(state['llm_fallbacks'])}, "
                    "template explanation used; decision unaffected.")
     if state.get("trace"):
         st.caption("Agent timings: " + " → ".join(
@@ -108,8 +88,6 @@ def render_findings(state: dict) -> None:
 def render_transaction(txn: dict) -> None:
     st.dataframe(pd.DataFrame([txn]), hide_index=True, width="stretch")
 
-
-# --- Sidebar ------------------------------------------------------------------
 
 with st.sidebar:
     st.title("🛡️ Fraud Detection System")
@@ -127,8 +105,6 @@ pending = pending_reviews()
 tab_run, tab_review, tab_audit = st.tabs(
     ["Run", f"Review queue ({len(pending)})", "Audit log"])
 
-
-# --- Run ----------------------------------------------------------------------
 
 with tab_run:
     st.subheader("Run transactions through the agents")
@@ -175,12 +151,12 @@ with tab_run:
                 st.error(str(e))
                 continue
             if "__interrupt__" in result:
-                status.update(label=f"⏸️ {txn['id']} — paused for human review "
+                status.update(label=f"⏸️ {txn['id']}: paused for human review "
                                     f"(score {result['risk_score']})", state="running")
                 st.info("Sent to the **Review queue** tab.")
             else:
                 action = result["final_action"]
-                status.update(label=f"{ACTION_ICON[action]} {txn['id']} — {action.upper()} "
+                status.update(label=f"{ACTION_ICON[action]} {txn['id']}: {action.upper()} "
                                     f"automatically (score {result['risk_score']})",
                               state="complete")
             render_transaction(result["transaction"])
@@ -188,8 +164,6 @@ with tab_run:
     if to_run:
         st.button("Refresh review queue")
 
-
-# --- Review queue -------------------------------------------------------------
 
 with tab_review:
     st.subheader("Cases waiting for a human decision")
@@ -225,11 +199,9 @@ with tab_review:
                 st.rerun()
 
 
-# --- Audit log ----------------------------------------------------------------
-
 with tab_audit:
     st.subheader("Audit log")
-    st.caption(f"Every decision, appended to `{audit.audit_path().name}` — "
+    st.caption(f"Every decision, appended to `{audit.audit_path().name}`, "
                "including who made each human decision and why.")
     entries = audit.read_all()
     if not entries:

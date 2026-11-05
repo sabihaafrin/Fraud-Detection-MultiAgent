@@ -1,5 +1,3 @@
-"""Unit tests for the deterministic scoring in each agent."""
-
 import pytest
 
 from src.agents.adjudicator import adjudicate
@@ -11,8 +9,6 @@ CLEAN = dict(id="T9001", customer_id="C001", amount_gbp=40.0, country="GB",
              category="groceries", hour=12, device_id="device_a1", txns_last_hour=1,
              new_payee=False, minutes_since_last_txn=300, last_txn_country="GB")
 
-
-# --- Rules --------------------------------------------------------------------
 
 def test_clean_transaction_triggers_no_rules():
     assert evaluate_rules(CLEAN) == ([], 0)
@@ -41,8 +37,6 @@ def test_rules_risk_is_capped_at_100():
     assert len(flags) == 5 and risk == 100
 
 
-# --- Behavioural --------------------------------------------------------------
-
 def test_clean_transaction_fits_behaviour():
     assert evaluate_behaviour(CLEAN, CUSTOMER_HISTORY["C001"]) == ([], 0)
 
@@ -69,8 +63,6 @@ def test_unknown_customer_has_no_behavioural_signals():
 def test_within_hours(hour, window, expected):
     assert _within_hours(hour, window) is expected
 
-
-# --- Adjudicator --------------------------------------------------------------
 
 @pytest.mark.parametrize("rule_risk, behavioural_risk, expected", [
     (0, 0, (0, "approve")),

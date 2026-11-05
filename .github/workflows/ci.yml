@@ -21,9 +21,7 @@ jobs:
         run: pip install -r requirements.txt
       - name: Lint
         run: ruff check .
-      - name: Tests (no LLM needed — it is faked)
+      - name: Tests
         run: pytest
-      - name: Accuracy report
-        run: python -m src.evaluate
-      - name: Dependency vulnerability audit
+      - name: Dependency audit
         run: pip-audit -r requirements.txt

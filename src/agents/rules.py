@@ -1,10 +1,3 @@
-"""Rules agent — deterministic and fully explainable.
-
-No LLM here: hard rules should be fast and auditable. Each triggered rule adds
-a fixed amount to this agent's risk contribution. The Adjudicator weighs this
-against the Behavioural agent's view.
-"""
-
 import logging
 
 from .. import config
@@ -15,7 +8,6 @@ log = logging.getLogger(__name__)
 
 
 def evaluate_rules(txn: dict) -> tuple[list[str], int]:
-    """Return the triggered rule flags and this agent's risk (0-100)."""
     flags: list[str] = []
     risk = 0
 

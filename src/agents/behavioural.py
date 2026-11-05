@@ -1,17 +1,3 @@
-"""Behavioural agent — is this transaction out of character for *this* customer?
-
-The comparisons against the customer's history (amount, hour, category,
-country) are computed in Python, and so is the risk score: small local models
-get numeric comparisons wrong (e.g. calling £1,400 "within" a £900 maximum),
-and a fraud decision must not hinge on that. The LLM's job is the part it is
-good at — turning the signals into a short explanation a human reviewer can
-read.
-
-It deliberately ignores hard rules (blocklists, velocity) — that is the Rules
-agent's job. If the LLM is unavailable, a template explanation is used and
-the decision is unaffected.
-"""
-
 import logging
 
 from .. import config
@@ -32,7 +18,7 @@ Customer's normal behaviour:
 Current transaction:
 {txn}
 
-These checks have already been computed and are correct — base your
+These checks have already been computed and are correct. Base your
 explanation on them and do not contradict them:
 - Out-of-character signals: {signals}
 - Behavioural risk: {risk}/100
@@ -41,7 +27,6 @@ Write only the explanation, no preamble."""
 
 
 def _within_hours(hour: int, usual_hours: str) -> bool:
-    """True if hour falls inside a window like "07:00-22:00" (may wrap midnight)."""
     start, end = (int(part.split(":")[0]) for part in usual_hours.split("-"))
     if start <= end:
         return start <= hour < end
@@ -49,7 +34,6 @@ def _within_hours(hour: int, usual_hours: str) -> bool:
 
 
 def _signals(txn: dict, history: dict) -> list[str]:
-    """Each way the transaction departs from the customer's history."""
     if not history:
         return []
     signals = []
@@ -65,7 +49,6 @@ def _signals(txn: dict, history: dict) -> list[str]:
 
 
 def evaluate_behaviour(txn: dict, history: dict) -> tuple[list[str], int]:
-    """Return the out-of-character signals and this agent's risk (0-100)."""
     signals = _signals(txn, history)
     return signals, min(sum(config.BEHAVIOURAL_WEIGHTS[s] for s in signals), 100)
 

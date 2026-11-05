@@ -1,13 +1,3 @@
-"""Append-only audit log of every decision.
-
-One JSON line per transaction: what each agent found, the score, the
-recommended and final action, whether a human decided (and who, and why), the
-model and thresholds in force, and per-agent timings. This is the record a
-fraud team or regulator would ask for — and it lets any decision be replayed.
-
-AUDIT_LOG_PATH overrides the location (the tests point it at a temp file).
-"""
-
 import json
 import os
 from datetime import UTC, datetime
