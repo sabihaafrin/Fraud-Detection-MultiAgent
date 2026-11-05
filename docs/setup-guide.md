@@ -1,10 +1,4 @@
-# Fraud Detection System — Setup Guide
-
-*Agentic AI Bootcamp — DAIM Lab, University of Hull — 4 November 2026*
-
-Get your machine ready **before the buildathon session** so the day is spent building, not installing. Each team member should run through this on their own laptop.
-
----
+# Fraud Detection System - Setup Guide
 
 ## The stack at a glance
 
@@ -20,7 +14,7 @@ If the team later switches to a hosted LLM (Gemini, OpenAI, Groq), only Step 5, 
 
 ---
 
-## Step 1 — Python 3.11 or newer
+## Step 1 - Python 3.11 or newer
 
 Check what you already have:
 
@@ -33,7 +27,7 @@ If it's below 3.11, or Python isn't installed, get it from [python.org/downloads
 
 ---
 
-## Step 2 — VS Code + extensions
+## Step 2 - VS Code + extensions
 
 1. Install VS Code: [code.visualstudio.com](https://code.visualstudio.com/)
 2. Open VS Code → Extensions panel (the square icon in the sidebar) → install:
@@ -43,7 +37,7 @@ If it's below 3.11, or Python isn't installed, get it from [python.org/downloads
 
 ---
 
-## Step 3 — Project folder + virtual environment
+## Step 3 - Project folder + virtual environment
 
 A virtual environment keeps this project's packages isolated so they don't clash with anything else on your machine.
 
@@ -62,7 +56,7 @@ When active, your terminal prompt shows `(.venv)`. Activate it every time you op
 
 ---
 
-## Step 4 — Install the packages
+## Step 4 - Install the packages
 
 With the virtual environment active:
 
@@ -87,7 +81,7 @@ Anyone cloning the repo can then run `pip install -r requirements.txt`.
 
 ---
 
-## Step 5 — Install Ollama and download the model
+## Step 5 - Install Ollama and download the model
 
 Ollama runs the LLM on your own laptop, so there's no API key to manage.
 
@@ -114,7 +108,7 @@ Ollama runs in the background after install (look for the llama icon in the syst
 
 ---
 
-## Step 6 — Git + GitHub
+## Step 6 - Git + GitHub
 
 Pushing to GitHub is a required deliverable, so set this up early.
 
@@ -136,7 +130,7 @@ Double-check `.env` is **not** in the pushed files before you share the repo.
 
 ---
 
-## Step 7 — Verify it all works
+## Step 7 - Verify it all works
 
 The single most useful check: confirm Python can talk to the local LLM. Create `test.py`:
 
