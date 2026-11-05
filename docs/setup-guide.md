@@ -9,9 +9,6 @@
 | Agent framework | LangGraph (+ LangChain) | Graph-based multi-agent flow with a real human-in-the-loop pause |
 | LLM | Ollama running `llama3.2:3b` locally | Free, no API key, no rate limits or "high demand" outages |
 | Version control | Git + GitHub | Required deliverable — "push your work to GitHub and share" |
-
-If the team later switches to a hosted LLM (Gemini, OpenAI, Groq), only Step 5, one package name and the model line change — the rest is identical.
-
 ---
 
 ## Step 1 - Python 3.11 or newer
@@ -146,34 +143,4 @@ Run it:
 
 ```bash
 python test.py
-```
-
-If you see **setup works**, your whole chain is ready: Python → virtual environment → packages → Ollama → LLM. The first reply can take 10–20 seconds while the model loads into memory. If it errors, it almost always points at Ollama not running or the model not pulled (Step 5), or the package install (Step 4).
-
----
-
-## Agree these as a team before 9am
-
-- **One LLM** for everyone — Ollama with `llama3.2:3b` (don't mix models or providers across agents for the MVP).
-- **Who owns which agent** — Orchestrator, Rules, Behavioural, Adjudicator, HITL. Natural split for a team of up to four.
-- **One person owns the GitHub repo** and adds the rest as collaborators.
-- **Sample data** — settle on one transaction dataset (a synthetic set like PaySim, or the classic credit-card fraud CSV) so everyone builds against the same thing.
-
----
-
-## Quick command reference
-
-```bash
-# activate environment (do this each session)
-source .venv/bin/activate        # macOS / Linux
-.venv\Scripts\activate           # Windows
-
-# install from the shared list
-pip install -r requirements.txt
-
-# save new packages after installing them
-pip freeze > requirements.txt
-
-# push work
-git add . && git commit -m "message" && git push
 ```
